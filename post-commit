@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# This script thumbnails any image files added to the repos and pops 'em in a new tree for use
+# by web based svn
+
+SVN="/usr/bin/svn"
+SVNLOOK="/usr/bin/svnlook"
+
+REPOS="$1"
+REV="$2"
+
+IFS=$'\n'
+for line in `$SVNLOOK changed -r$REV "$REPOS"`; 
+do
+	# thumbnail
+	if echo $line | grep '\(A\|M\).*\(.psd\|.jpg\|.png\|.jpeg\)$' > /dev/null;
+	then
+		# strip SVN flags
+		file=`echo $line  | cut -c 5-`
+		ext=${file##*.}
+		op="/var/svn/thumbs/$file"
+		mkdir -p `dirname "$op"`
+
+		svn cat -r $REV "file://$REPOS/$file" \
+		| convert $ext:-[0] -thumbnail 500x500^ -gravity North -extent 200x200 -quality 75 jpg:"$op" 
+	fi;
+
+	# remove thumbs if deleted
+	if echo $line | grep '^D\s.*\(.psd\|.jpg\|.png\|.jpeg\)$' > /dev/null;
+	then
+		file=`echo $line  | cut -c 5-`
+		rm "/var/svn/thumbs/$file"
+	fi;
+done
+
+exit 0
