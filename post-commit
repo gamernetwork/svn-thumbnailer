@@ -13,16 +13,17 @@ IFS=$'\n'
 for line in `$SVNLOOK changed -r$REV "$REPOS"`; 
 do
 	# thumbnail
-	if echo $line | grep '\(A\|M\).*\(.psd\|.jpg\|.png\|.jpeg\)$' > /dev/null;
+	if echo $line | grep '\(A\|M\|U\).*\(.psd\|.jpg\|.png\|.jpeg\)$' > /dev/null;
 	then
 		# strip SVN flags
 		file=`echo $line  | cut -c 5-`
 		ext=${file##*.}
 		op="/var/svn/thumbs/$file"
+		op="${op%.*}.jpg"
 		mkdir -p `dirname "$op"`
 
-		svn cat -r $REV "file://$REPOS/$file" \
-		| convert $ext:-[0] -thumbnail 500x500^ -gravity North -extent 200x200 -quality 75 jpg:"$op" 
+		$SVNLOOK cat -r$REV "$REPOS" "$file" \
+		| convert $ext:-[0] -thumbnail 500x500^ -gravity North -extent 200x200 -quality 75 "$op" 
 	fi;
 
 	# remove thumbs if deleted
